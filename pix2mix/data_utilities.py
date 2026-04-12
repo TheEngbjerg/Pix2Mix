@@ -31,7 +31,9 @@ class JamendoDataset(Dataset):
         image = Image.open(cover_path)
         image = transforms.ToTensor()(image)  # transform to tensor
 
-        transform(audio_path)
+        if not os.path.exists(np_path):
+            transform(audio_path)
+        
         spectrogram = torch.from_numpy(
             np.load(np_path)
         )
