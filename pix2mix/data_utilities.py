@@ -1,9 +1,11 @@
 import os
+import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from PIL import Image
 import torchaudio
+from model.decoder.diffwave.src.diffwave.preprocess import transform
 
 
 class JamendoDataset(Dataset):
@@ -23,14 +25,18 @@ class JamendoDataset(Dataset):
         folder = self.folders[idx]
         cover_path = os.path.join(folder, "cover.jpg")
         audio_path = os.path.join(folder, "audio.wav")
+        np_path = audio_path + ".spec.npy"
 
         # Load
         image = Image.open(cover_path)
         image = transforms.ToTensor()(image)  # transform to tensor
 
-        audio, sr = torchaudio.load(audio_path)
+        transform(audio_path)
+        spectrogram = torch.from_numpy(
+            np.load(np_path)
+        )
 
-        return image, audio
+        return image, spectrogram
 
 
 def get_dataloader(
