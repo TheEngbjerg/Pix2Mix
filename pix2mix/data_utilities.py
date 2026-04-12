@@ -7,7 +7,7 @@ import torchaudio
 
 
 class JamendoDataset(Dataset):
-    def __init__(self, dataset_dir="/ceph/project/pix_audio/data/dataset_jamendo"):
+    def __init__(self, dataset_dir):
         super().__init__()
         self.dataset_dir = dataset_dir
         self.folders = [
@@ -33,6 +33,8 @@ class JamendoDataset(Dataset):
         return image, audio
 
 
-def get_dataloader(dataset_dir, batch_size=16):  # just 16 for now
+def get_dataloader(
+    dataset_dir="/ceph/project/pix_audio/data/dataset_jamendo", batch_size=16
+):  # just 16 for now
     dataset = JamendoDataset(dataset_dir)
     return DataLoader(dataset, batch_size=batch_size, shuffle=True)
