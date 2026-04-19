@@ -5,7 +5,6 @@ from torchvision import transforms
 from PIL import Image
 from model.decoder.diffwave.src.diffwave.preprocess import transform
 from torch.utils.data import Dataset, DataLoader, random_split
-from sklearn.model_selection import KFold
 import torch.nn.functional as F
 
 MAX_FRAMES = 62  # choose a fixed length that fits your data/model
