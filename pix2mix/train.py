@@ -63,20 +63,18 @@ def evaluate(model: PixEncoder, dataloader: DataLoader, loss_fn = loss_fn, devic
 
 best_loss = None
 for epoch in tqdm(range(epochs)):
-    logger.info(f"\nEpoch: {epoch}")
+    save_model = False
     train_loss = train(model=model, dataloader=train_set, loss_fn=loss_fn)
-    logger.info(f"Train loss: {train_loss}")
     eval_loss = evaluate(model=model, dataloader=validation_set, loss_fn=loss_fn)
-    logger.info(f"Evaluation loss: {eval_loss}")
-
     if best_loss == None:
         best_loss = eval_loss
-        model_file = os.path.join(
-            output_dir,
-            f"model_e{epoch}.pt"
-        )
-        torch.save(model.state_dict(), model_file)
-    elif eval_loss < best_loss:
+        save_model = True
+    elif best_loss > eval_loss:
+        best_loss = eval_loss
+        save_model = True
+    logger.info(f"Epoch: {epoch}\nTrain loss: {train_loss}\nEvaluation loss: {eval_loss}\nSave model: {save_model}")
+
+    if save_model:
         model_file = os.path.join(
             output_dir,
             f"model_e{epoch}.pt"
