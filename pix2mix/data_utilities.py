@@ -1,8 +1,8 @@
 import os
+import torch
 import numpy as np
 from torchvision import transforms
 from PIL import Image
-import torchaudio
 from model.decoder.diffwave.src.diffwave.preprocess import transform
 from torch.utils.data import Dataset, DataLoader, Subset
 from sklearn.model_selection import KFold
@@ -36,7 +36,10 @@ class JamendoDataset(Dataset):
 
         spectrogram = torch.from_numpy(np.load(np_path))
 
-        return image, spectrogram
+        return {
+            "input": image,
+            "target": spectrogram
+        }
 
 
 def get_dataloader(
@@ -45,7 +48,6 @@ def get_dataloader(
     dataset = JamendoDataset(dataset_dir)
     kf = KFold(n_splits=k, shuffle=True, random_state=42)
 
-    folds = []
     for train_indices, val_indices in kf.split(dataset):
         train_loader = DataLoader(
             Subset(dataset, train_indices), batch_size=batch_size, shuffle=True
@@ -53,6 +55,5 @@ def get_dataloader(
         val_loader = DataLoader(
             Subset(dataset, val_indices), batch_size=batch_size, shuffle=False
         )
-        folds.append((train_loader, val_loader))
 
-    return folds
+    return train_loader, val_loader
