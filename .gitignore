@@ -208,3 +208,6 @@ __marimo__/
 
 # Debug dataset
 dataset_10/
+
+# Output
+out/
