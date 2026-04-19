@@ -4,7 +4,7 @@ import numpy as np
 from torchvision import transforms
 from PIL import Image
 from model.decoder.diffwave.src.diffwave.preprocess import transform
-from torch.utils.data import Dataset, DataLoader, Subset
+from torch.utils.data import Dataset, DataLoader, random_split
 from sklearn.model_selection import KFold
 import torch.nn.functional as F
 
@@ -59,14 +59,16 @@ def get_dataloader(
     dataset_dir="/ceph/project/pix_audio/data/dataset_jamendo", batch_size=16, k=5
 ):  # just 16 for now
     dataset = JamendoDataset(dataset_dir)
-    kf = KFold(n_splits=k, shuffle=True, random_state=42)
-
-    for train_indices, val_indices in kf.split(dataset):
-        train_loader = DataLoader(
-            Subset(dataset, train_indices), batch_size=batch_size, shuffle=True
-        )
-        val_loader = DataLoader(
-            Subset(dataset, val_indices), batch_size=batch_size, shuffle=False
-        )
+    train_dataset, validation_dataset = random_split(dataset, [0.8, 0.2])
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True
+    )
+    val_loader = DataLoader(
+        validation_dataset,
+        batch_size=batch_size,
+        shuffle=True
+    )
 
     return train_loader, val_loader
