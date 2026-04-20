@@ -1,3 +1,0 @@
-[submodule "pix2mix/model/decoder/diffwave"]
-	path = pix2mix/model/decoder/diffwave
-	url = https://github.com/TheEngbjerg/diffwave.git
