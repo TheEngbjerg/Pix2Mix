@@ -97,14 +97,3 @@ class PixMixEncoder(nn.Module):
         out = F.interpolate(out, size=(self.n_mels, self.target_t), mode="bilinear", align_corners=False)
 
         return out
-
-
-if __name__ == "__main__":
-
-    model = ResNetEncoder()
-    input_tensor = torch.randn(1, 3, 300, 300)
-
-    x = model(input_tensor)
-
-    for i in x:
-        print(i.shape)
