@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 epochs = 100
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-model = PixMixEncoder().to(device)
+model = PixMixEncoder(target_t=100).to(device)
 train_set, validation_set = get_dataloader(dataset_dir="dataset_10/")
 
 loss_fn = nn.L1Loss()

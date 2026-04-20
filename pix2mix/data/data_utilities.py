@@ -3,11 +3,11 @@ import torch
 import numpy as np
 from torchvision import transforms
 from PIL import Image
-from model.decoder.diffwave.src.diffwave.preprocess import transform
+from diffwave.preprocess import transform
 from torch.utils.data import Dataset, DataLoader, random_split
 import torch.nn.functional as F
 
-MAX_FRAMES = 20000  # choose a fixed length that fits your data/model
+MAX_FRAMES = 100  # choose a fixed length that fits your data/model
 
 def pad_or_crop_spectrogram(spectrogram, max_frames=MAX_FRAMES):
     if spectrogram.shape[1] < max_frames:
@@ -16,6 +16,14 @@ def pad_or_crop_spectrogram(spectrogram, max_frames=MAX_FRAMES):
     else:
         spectrogram = spectrogram[:, :max_frames]
     return spectrogram
+
+def load_image(path: str):
+    image = Image.open(path)
+    if image.mode != "RGB":
+        image = image.convert("RGB")
+    image = transforms.ToTensor()(image)
+    return image
+
 
 class JamendoDataset(Dataset):
     def __init__(self, dataset_dir):
@@ -37,10 +45,7 @@ class JamendoDataset(Dataset):
         np_path = audio_path + ".spec.npy"
 
         # Load
-        image = Image.open(cover_path)
-        if image.mode != "RGB":
-            image = image.convert("RGB")
-        image = transforms.ToTensor()(image)
+        image = load_image(cover_path)
 
         if not os.path.exists(np_path):
             transform(audio_path)
