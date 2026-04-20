@@ -1,7 +1,7 @@
 import torch
 import os
 from torch import nn
-from model.encoder.pix_encoder import PixMixEncoder
+from pix2mix.model.pix_encoder import PixMixEncoder
 from data.data_utilities import get_dataloader, DataLoader
 from tqdm import tqdm
 import logging

@@ -1,5 +1,5 @@
 import torch
-from model.encoder.pix_encoder import PixMixEncoder
+from pix2mix.model.pix_encoder import PixMixEncoder
 from data.data_utilities import load_image
 import numpy as np
 

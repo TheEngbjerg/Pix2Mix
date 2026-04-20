@@ -9,6 +9,7 @@ import torch.nn.functional as F
 
 MAX_FRAMES = 100  # choose a fixed length that fits your data/model
 
+
 def pad_or_crop_spectrogram(spectrogram, max_frames=MAX_FRAMES):
     if spectrogram.shape[1] < max_frames:
         pad = max_frames - spectrogram.shape[1]
