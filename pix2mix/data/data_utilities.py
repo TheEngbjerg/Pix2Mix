@@ -7,7 +7,7 @@ from model.decoder.diffwave.src.diffwave.preprocess import transform
 from torch.utils.data import Dataset, DataLoader, random_split
 import torch.nn.functional as F
 
-MAX_FRAMES = 62  # choose a fixed length that fits your data/model
+MAX_FRAMES = 20000  # choose a fixed length that fits your data/model
 
 def pad_or_crop_spectrogram(spectrogram, max_frames=MAX_FRAMES):
     if spectrogram.shape[1] < max_frames:
@@ -55,7 +55,7 @@ class JamendoDataset(Dataset):
 
 
 def get_dataloader(
-    dataset_dir="/ceph/project/pix_audio/data/dataset_jamendo", batch_size=16, k=5
+    dataset_dir="/ceph/project/pix_audio/data/dataset_jamendo", batch_size=8, k=5
 ):  # just 16 for now
     dataset = JamendoDataset(dataset_dir)
     train_dataset, validation_dataset = random_split(dataset, [0.8, 0.2])

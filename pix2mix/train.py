@@ -23,7 +23,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 model = PixMixEncoder().to(device)
 train_set, validation_set = get_dataloader(dataset_dir="dataset_10/")
 
-loss_fn = nn.MSELoss()
+loss_fn = nn.L1Loss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
 def train(model: PixMixEncoder, dataloader: DataLoader, loss_fn = loss_fn, optimizer = optimizer, device: torch.device = device):
@@ -35,7 +35,7 @@ def train(model: PixMixEncoder, dataloader: DataLoader, loss_fn = loss_fn, optim
         input_tensor = batch["input"].to(device)
         target_tensor = batch["target"].to(device)
         output = model(input_tensor)
-        loss = loss_fn(output, target_tensor)
+        loss = loss_fn(output.squeeze(1), target_tensor)
         running_loss += loss.item()
         loss.backward()
         optimizer.step()
@@ -54,7 +54,7 @@ def evaluate(model: PixMixEncoder, dataloader: DataLoader, loss_fn = loss_fn, de
 
         with torch.no_grad():
             output = model(input_tensor)
-        loss = loss_fn(output, target_tensor)
+        loss = loss_fn(output.squeeze(1), target_tensor)
         running_loss += loss.item()
     
     avg_loss = running_loss / len(dataloader)

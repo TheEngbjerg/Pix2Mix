@@ -27,9 +27,11 @@ class UpBlock(nn.Module):
         self.conv2 = ConvolutionBlock(out_ch, out_ch)
     
     def forward(self, x, skip = None):
-        x = F.interpolate(x, scale_factor=2, mode="bilinear", align_corners=False)
         if skip is not None:
+            x = F.interpolate(x, size=skip.shape[-2:], mode="bilinear", align_corners=False)
             x = torch.cat([x, skip], dim=1)
+        else:
+            x = F.interpolate(x, scale_factor=2, mode="bilinear", align_corners=False)
         x = self.conv1(x)
         x = self.conv2(x)
         return x
@@ -65,7 +67,7 @@ class ResNetEncoder(nn.Module):
 
 class PixMixEncoder(nn.Module):
 
-    def __init__(self, n_mels=80, out_channels=1, *args, **kwargs):
+    def __init__(self, n_mels=80, out_channels=1, target_t = 20000, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.encoder = ResNetEncoder()
@@ -79,6 +81,7 @@ class PixMixEncoder(nn.Module):
         self.final_conv = nn.Conv2d(16, out_channels, kernel_size=1)
 
         self.n_mels = n_mels
+        self.target_t = target_t
     
     def forward(self, x):
         x1, x3, x4, x5, x6 = self.encoder(x)
@@ -91,7 +94,7 @@ class PixMixEncoder(nn.Module):
 
         out = self.final_conv(d5)
 
-        out = F.interpolate(out, size=(self.n_mels, out.shape[.1]), mode="bilinear", align_corners=False)
+        out = F.interpolate(out, size=(self.n_mels, self.target_t), mode="bilinear", align_corners=False)
 
         return out
 
