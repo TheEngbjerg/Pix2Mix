@@ -1,7 +1,7 @@
 import torch
 import os
 from torch import nn
-from model.encoder.pix_encoder import PixEncoder
+from model.encoder.pix_encoder import PixMixEncoder
 from data.data_utilities import get_dataloader, DataLoader
 from tqdm import tqdm
 import logging
@@ -20,13 +20,13 @@ logger = logging.getLogger(__name__)
 epochs = 100
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-model = PixEncoder().to(device)
+model = PixMixEncoder().to(device)
 train_set, validation_set = get_dataloader(dataset_dir="dataset_10/")
 
 loss_fn = nn.MSELoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
-def train(model: PixEncoder, dataloader: DataLoader, loss_fn = loss_fn, optimizer = optimizer, device: torch.device = device):
+def train(model: PixMixEncoder, dataloader: DataLoader, loss_fn = loss_fn, optimizer = optimizer, device: torch.device = device):
     model.train()
     running_loss = 0
 
@@ -44,7 +44,7 @@ def train(model: PixEncoder, dataloader: DataLoader, loss_fn = loss_fn, optimize
 
     return avg_loss
 
-def evaluate(model: PixEncoder, dataloader: DataLoader, loss_fn = loss_fn, device: torch.device = device):
+def evaluate(model: PixMixEncoder, dataloader: DataLoader, loss_fn = loss_fn, device: torch.device = device):
     model.eval()
     running_loss = 0
 
