@@ -18,6 +18,7 @@ def pad_or_crop_spectrogram(spectrogram, max_frames=MAX_FRAMES):
         spectrogram = spectrogram[:, :max_frames]
     return spectrogram
 
+
 def load_image(path: str):
     image = Image.open(path)
     if image.mode != "RGB":
@@ -54,26 +55,18 @@ class JamendoDataset(Dataset):
         spectrogram = torch.from_numpy(np.load(np_path))
         spectrogram = pad_or_crop_spectrogram(spectrogram)
 
-        return {
-            "input": image,
-            "target": spectrogram
-        }
+        return {"input": image, "target": spectrogram}
 
 
 def get_dataloader(
     dataset_dir="/ceph/project/pix_audio/data/dataset_jamendo", batch_size=8, k=5
 ):  # just 16 for now
     dataset = JamendoDataset(dataset_dir)
-    train_dataset, validation_dataset = random_split(dataset, [0.8, 0.2])
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=batch_size,
-        shuffle=True
+    train_dataset, validation_dataset, test_dataset = random_split(
+        dataset, [0.7, 0.1, 0.2]
     )
-    val_loader = DataLoader(
-        validation_dataset,
-        batch_size=batch_size,
-        shuffle=True
-    )
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(validation_dataset, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
-    return train_loader, val_loader
+    return train_loader, val_loader, test_dataset
