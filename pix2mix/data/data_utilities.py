@@ -7,7 +7,7 @@ from diffwave.preprocess import transform
 from torch.utils.data import Dataset, DataLoader, random_split
 import torch.nn.functional as F
 
-MAX_FRAMES = 100  # choose a fixed length that fits your data/model
+MAX_FRAMES = 20000  # choose a fixed length that fits your data/model
 
 
 def pad_or_crop_spectrogram(spectrogram, max_frames=MAX_FRAMES):
@@ -51,7 +51,7 @@ class JamendoDataset(Dataset):
         spectrogram = torch.from_numpy(np.load(np_path))
         spectrogram = pad_or_crop_spectrogram(spectrogram)
 
-        return {"input": image, "target": spectrogram, "name": folder}
+        return {"input": image, "target": spectrogram, "name": self.folders[idx]}
 
 
 def get_dataloader(

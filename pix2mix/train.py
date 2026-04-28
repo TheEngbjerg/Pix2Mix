@@ -4,9 +4,21 @@ import pandas as pd
 from torch import nn
 import numpy as np
 from model.pix_encoder import PixMixEncoder
-from data.data_utilities import get_dataloader, DataLoader
+from data.data_utilities import get_dataloader, DataLoader, MAX_FRAMES
 from tqdm import tqdm
 import logging
+import matplotlib.pyplot as plt
+from argparse import ArgumentParser
+
+def create_parser():
+    parser = ArgumentParser()
+    parser.add_argument("-i", "--input-directory", type=str, required=True, help="Path to input")
+    parser.add_argument("-e", "--epochs", type=int, required=False, default=100, help="Epoch amount")
+    args = parser.parse_args()
+
+    return args.input_directory, args.epochs
+
+input_directory, epochs = create_parser()
 
 # Output location
 output_dir = "out/"
@@ -36,12 +48,13 @@ logging.basicConfig(filename=logger_location, level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Training setup
-epochs = 100
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-model = PixMixEncoder(target_t=100).to(device)
-train_set, validation_set, test_set = get_dataloader(dataset_dir="dataset_jamendo/")
+model = PixMixEncoder(target_t=MAX_FRAMES).to(device)
+train_set, validation_set, test_set = get_dataloader(dataset_dir=input_directory)
 
+
+learning_rate = 1e-4
 l1_loss_fn = nn.L1Loss()
 # Loss parameters
 lamda_log = 1.0
@@ -59,7 +72,7 @@ def spectrogram_loss(prediction: torch.Tensor, target: torch.Tensor):
     return l1_loss + lamda_log * l1_log_loss
 
 
-optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 def train(model: PixMixEncoder, dataloader: DataLoader, optimizer = optimizer, device: torch.device = device):
     model.train()
@@ -111,21 +124,31 @@ def test(model: PixMixEncoder, dataloader: DataLoader, device: torch.device = de
 
         with torch.no_grad():
             output = model(input_tensor)
+        output = output.squeeze(1)
         loss = spectrogram_loss(output, target_tensor)
+        running_loss += loss.item()
 
-        # Log results
-        test_logs["loss"].append(loss)
-        test_logs["name"].append(batch["name"])
+        # Per sample processing
+        output_np = output.cpu().numpy()
+        target_np = target_tensor.cpu().numpy()
+        batch_size = output.shape[0]
 
-        # Update running loss
-        running_loss += loss
+        for i in range(batch_size):
+            name = batch["name"][i]
+            pred = output_np[i]
+            targ = target_np[i]
+            loss_i = spectrogram_loss(torch.from_numpy(pred).unsqueeze(0), torch.from_numpy(targ).unsqueeze(0)).item()
 
-        # Save output
-        output = output.cpu().numpy()
-        np.save(os.path.join(
-            test_dir,
-            f"{idx}_{batch["name"]}.npy"
-        ))
+            test_logs["name"].append(name)
+            test_logs["loss"].append(loss_i)
+
+            current_test_dir = os.path.join(test_dir, name)
+            os.makedirs(current_test_dir, exist_ok=True)
+
+            figure_path = os.path.join(current_test_dir, "spectrograms.png")
+            create_pref_target_spectrogram(pred, targ, save_path=figure_path, title_prefix=name)
+
+            np.save(os.path.join(current_test_dir, f"{idx}_{i}_{name}.npy"), pred)
     
     # Save logs
     pd.DataFrame(test_logs).to_csv(
@@ -137,6 +160,42 @@ def test(model: PixMixEncoder, dataloader: DataLoader, device: torch.device = de
 
     avg_loss = running_loss / len(dataloader)
     return avg_loss
+
+def create_pref_target_spectrogram(prediction: np.ndarray, target: np.ndarray, save_path: str = None, title_prefix: str = ""):
+    """Plot prediction and target spectrograms side by side.
+
+    Args:
+        prediction: 2D array with prediction spectrogram values.
+        target: 2D array with target spectrogram values.
+        save_path: Optional path to save the figure. If None, the figure will be shown.
+        title_prefix: Optional prefix for plot titles.
+
+    Returns:
+        The created matplotlib figure.
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+    im_target = axes[0].imshow(target, aspect='auto', origin='lower', cmap='viridis')
+    axes[0].set_title(f"{title_prefix} Target Spectrogram")
+    axes[0].set_xlabel("Time")
+    axes[0].set_ylabel("Frequency")
+    fig.colorbar(im_target, ax=axes[0], format="%.2f")
+
+    im_pred = axes[1].imshow(prediction, aspect='auto', origin='lower', cmap='viridis')
+    axes[1].set_title(f"{title_prefix} Prediction Spectrogram")
+    axes[1].set_xlabel("Time")
+    fig.colorbar(im_pred, ax=axes[1], format="%.2f")
+
+    fig.tight_layout()
+
+    if save_path:
+        fig.savefig(save_path, dpi=150)
+        plt.close(fig)
+    else:
+        plt.show()
+
+    return fig
+
 
 best_loss = None
 for epoch in tqdm(range(epochs)):

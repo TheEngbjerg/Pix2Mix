@@ -74,8 +74,8 @@ class PixMixEncoder(nn.Module):
 
         self.up1 = UpBlock(512, 256, 256)
         self.up2 = UpBlock(256, 128, 128)
-        self.up3 = UpBlock(128, 64, 64)
-        self.up4 = UpBlock(64, 32, 64)
+        self.up3 = UpBlock(128, 64, 0)
+        self.up4 = UpBlock(64, 32, 0)
         self.up5 = UpBlock(32, 16, 0)
 
         self.final_conv = nn.Conv2d(16, out_channels, kernel_size=1)
@@ -88,8 +88,8 @@ class PixMixEncoder(nn.Module):
 
         d1 = self.up1(x6, x5)
         d2 = self.up2(d1, x4)
-        d3 = self.up3(d2, x3)
-        d4 = self.up4(d3, x1)
+        d3 = self.up3(d2, None)
+        d4 = self.up4(d3, None)
         d5 = self.up5(d4, None)
 
         out = self.final_conv(d5)
