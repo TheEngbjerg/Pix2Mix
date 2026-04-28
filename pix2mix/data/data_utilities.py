@@ -55,7 +55,7 @@ class JamendoDataset(Dataset):
         spectrogram = torch.from_numpy(np.load(np_path))
         spectrogram = pad_or_crop_spectrogram(spectrogram)
 
-        return {"input": image, "target": spectrogram}
+        return {"input": image, "target": spectrogram, "name": folder}
 
 
 def get_dataloader(
