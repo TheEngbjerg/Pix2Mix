@@ -40,7 +40,7 @@ epochs = 100
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 model = PixMixEncoder(target_t=100).to(device)
-train_set, validation_set, test_set = get_dataloader(dataset_dir="dataset_10/")
+train_set, validation_set, test_set = get_dataloader(dataset_dir="dataset_jamendo/")
 
 l1_loss_fn = nn.L1Loss()
 # Loss parameters

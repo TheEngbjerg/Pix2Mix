@@ -31,17 +31,13 @@ class JamendoDataset(Dataset):
     def __init__(self, dataset_dir):
         super().__init__()
         self.dataset_dir = dataset_dir
-        self.folders = [
-            os.path.join(dataset_dir, f)
-            for f in os.listdir(dataset_dir)
-            if os.path.isdir(os.path.join(dataset_dir, f))
-        ]
+        self.folders = os.listdir(dataset_dir)
 
     def __len__(self):  # return how many samples there are
         return len(self.folders)
 
     def __getitem__(self, idx):  # load and return one sample by index
-        folder = self.folders[idx]
+        folder = os.path.join(self.dataset_dir, self.folders[idx])
         cover_path = os.path.join(folder, "cover.jpg")
         audio_path = os.path.join(folder, "audio.wav")
         np_path = audio_path + ".spec.npy"
