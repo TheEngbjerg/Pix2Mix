@@ -12,7 +12,7 @@ def create_parser():
     parser = ArgumentParser()
     parser.add_argument("-i", "--input-directory", type=str, required=True, help="Path to input")
     parser.add_argument("-e", "--epochs", type=int, required=False, default=100, help="Epoch amount")
-    parser.add_argument("-l", "--learning-rate", type=float, required=False, default=1e-4, help="Learning rate")
+    parser.add_argument("-l", "--learning-rate", type=float, required=False, default=1e-3, help="Learning rate")
     args = parser.parse_args()
 
     return args.input_directory, args.epochs, args.learning_rate
@@ -81,7 +81,7 @@ if __name__ == "__main__":
             save_model = True
         logger.info(f"Epoch: {epoch}\nTrain loss: {train_loss}\nEvaluation loss: {eval_loss}\nSave model: {save_model}")
 
-        if save_model:
+        if save_model or epoch % 10 == 0:
             model_file = get_modelfile(f"model_e{epoch}", model_dir)
             torch.save(model.state_dict(), model_file)
     
