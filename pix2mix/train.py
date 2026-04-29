@@ -1,13 +1,10 @@
 import torch
 import os
-import pandas as pd
-from torch import nn
-import numpy as np
 from model.pix_encoder import PixMixEncoder
+from model.loss_fn import spectrogram_loss
 from data.data_utilities import get_dataloader, DataLoader, MAX_FRAMES
 from tqdm import tqdm
 import logging
-import matplotlib.pyplot as plt
 from argparse import ArgumentParser
 
 def create_parser():
@@ -18,58 +15,18 @@ def create_parser():
 
     return args.input_directory, args.epochs
 
-input_directory, epochs = create_parser()
-
-# Output location
-output_dir = "out/"
-model_dir = os.path.join(
-    output_dir,
-    "model_weights/"
-)
-logs_dir = os.path.join(
-    output_dir,
-    "logs/"
-)
-test_dir = os.path.join(
-    output_dir,
-    "test_output/"
-)
-for dir in [
-    output_dir,
-    logs_dir,
-    model_dir,
-    test_dir
-]:
-    os.makedirs(dir, exist_ok=True)
-
 # log
-logger_location = os.path.join(logs_dir, "training_log")
-logging.basicConfig(filename=logger_location, level=logging.INFO)
-logger = logging.getLogger(__name__)
+# logger_location = os.path.join(logs_dir, "training_log")
+# logging.basicConfig(filename=logger_location, level=logging.INFO)
+# logger = logging.getLogger(__name__)
 
 # Training setup
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 model = PixMixEncoder(target_t=MAX_FRAMES).to(device)
-train_set, validation_set, test_set = get_dataloader(dataset_dir=input_directory)
 
 
 learning_rate = 1e-4
-l1_loss_fn = nn.L1Loss()
-# Loss parameters
-lamda_log = 1.0
-eps = 1e-5
-def spectrogram_loss(prediction: torch.Tensor, target: torch.Tensor):
-    prediction = torch.clamp(prediction, min=eps)
-    target = torch.clamp(target, min=eps)
-
-    l1_loss = l1_loss_fn(prediction, target)
-    l1_log_loss = l1_loss_fn(
-        torch.log(prediction),
-        torch.log(target)
-    )
-
-    return l1_loss + lamda_log * l1_log_loss
 
 
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -109,116 +66,26 @@ def evaluate(model: PixMixEncoder, dataloader: DataLoader, device: torch.device 
 
     return avg_loss
 
-def test(model: PixMixEncoder, dataloader: DataLoader, device: torch.device = device):
-    model.eval()
-    running_loss = 0
 
-    test_logs = {
-        "name": [],
-        "loss": []
-    }
+if __name__ == "__main__":
+    input_directory, epochs = create_parser()
+    train_set, validation_set, test_set = get_dataloader(dataset_dir=input_directory)
+    best_loss = None
+    for epoch in tqdm(range(epochs)):
+        save_model = False
+        train_loss = train(model=model, dataloader=train_set)
+        eval_loss = evaluate(model=model, dataloader=validation_set)
+        if best_loss == None:
+            best_loss = eval_loss
+            save_model = True
+        elif best_loss > eval_loss:
+            best_loss = eval_loss
+            save_model = True
+        logger.info(f"Epoch: {epoch}\nTrain loss: {train_loss}\nEvaluation loss: {eval_loss}\nSave model: {save_model}")
 
-    for idx, batch in enumerate(dataloader):
-        input_tensor = batch["input"].to(device)
-        target_tensor = batch["target"].to(device)
-
-        with torch.no_grad():
-            output = model(input_tensor)
-        output = output.squeeze(1)
-        loss = spectrogram_loss(output, target_tensor)
-        running_loss += loss.item()
-
-        # Per sample processing
-        output_np = output.cpu().numpy()
-        target_np = target_tensor.cpu().numpy()
-        batch_size = output.shape[0]
-
-        for i in range(batch_size):
-            name = batch["name"][i]
-            pred = output_np[i]
-            targ = target_np[i]
-            loss_i = spectrogram_loss(torch.from_numpy(pred).unsqueeze(0), torch.from_numpy(targ).unsqueeze(0)).item()
-
-            test_logs["name"].append(name)
-            test_logs["loss"].append(loss_i)
-
-            current_test_dir = os.path.join(test_dir, name)
-            os.makedirs(current_test_dir, exist_ok=True)
-
-            figure_path = os.path.join(current_test_dir, "spectrograms.png")
-            create_pref_target_spectrogram(pred, targ, save_path=figure_path, title_prefix=name)
-
-            np.save(os.path.join(current_test_dir, f"{idx}_{i}_{name}.npy"), pred)
-    
-    # Save logs
-    pd.DataFrame(test_logs).to_csv(
-        os.path.join(
-            test_dir,
-            "test_logs.csv"
-        )
-    )
-
-    avg_loss = running_loss / len(dataloader)
-    return avg_loss
-
-def create_pref_target_spectrogram(prediction: np.ndarray, target: np.ndarray, save_path: str = None, title_prefix: str = ""):
-    """Plot prediction and target spectrograms side by side.
-
-    Args:
-        prediction: 2D array with prediction spectrogram values.
-        target: 2D array with target spectrogram values.
-        save_path: Optional path to save the figure. If None, the figure will be shown.
-        title_prefix: Optional prefix for plot titles.
-
-    Returns:
-        The created matplotlib figure.
-    """
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-
-    im_target = axes[0].imshow(target, aspect='auto', origin='lower', cmap='viridis')
-    axes[0].set_title(f"{title_prefix} Target Spectrogram")
-    axes[0].set_xlabel("Time")
-    axes[0].set_ylabel("Frequency")
-    fig.colorbar(im_target, ax=axes[0], format="%.2f")
-
-    im_pred = axes[1].imshow(prediction, aspect='auto', origin='lower', cmap='viridis')
-    axes[1].set_title(f"{title_prefix} Prediction Spectrogram")
-    axes[1].set_xlabel("Time")
-    fig.colorbar(im_pred, ax=axes[1], format="%.2f")
-
-    fig.tight_layout()
-
-    if save_path:
-        fig.savefig(save_path, dpi=150)
-        plt.close(fig)
-    else:
-        plt.show()
-
-    return fig
-
-
-best_loss = None
-for epoch in tqdm(range(epochs)):
-    save_model = False
-    train_loss = train(model=model, dataloader=train_set)
-    eval_loss = evaluate(model=model, dataloader=validation_set)
-    if best_loss == None:
-        best_loss = eval_loss
-        save_model = True
-    elif best_loss > eval_loss:
-        best_loss = eval_loss
-        save_model = True
-    logger.info(f"Epoch: {epoch}\nTrain loss: {train_loss}\nEvaluation loss: {eval_loss}\nSave model: {save_model}")
-
-    if save_model:
-        model_file = os.path.join(
-            model_dir,
-            f"model_e{epoch}.pt"
-        )
-        torch.save(model.state_dict(), model_file)
-
-# Test best model
-best_model_dict = torch.load(model_file)
-model.load_state_dict(best_model_dict)
-
-test(model=model, dataloader=test_set)
+        if save_model:
+            model_file = os.path.join(
+                model_dir,
+                f"model_e{epoch}.pt"
+            )
+            torch.save(model.state_dict(), model_file)

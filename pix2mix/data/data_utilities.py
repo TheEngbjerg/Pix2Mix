@@ -55,14 +55,18 @@ class JamendoDataset(Dataset):
 
 
 def get_dataloader(
-    dataset_dir="/ceph/project/pix_audio/data/dataset_jamendo", batch_size=8, k=5
-):  # just 16 for now
+    dataset_dir: str, batch_size: int = 8, test: bool = False
+) -> tuple[DataLoader, DataLoader] | DataLoader:
     dataset = JamendoDataset(dataset_dir)
-    train_dataset, validation_dataset, test_dataset = random_split(
-        dataset, [0.7, 0.1, 0.2]
-    )
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(validation_dataset, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    if not test:
+        train_dataset, validation_dataset,  = random_split(
+            dataset, [0.8, 0.2]
+        )
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+        val_loader = DataLoader(validation_dataset, batch_size=batch_size, shuffle=True)
+        
 
-    return train_loader, val_loader, test_loader
+        return train_loader, val_loader
+    
+    test_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+    return test_loader
