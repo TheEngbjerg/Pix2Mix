@@ -93,6 +93,7 @@ class PixMixEncoder(nn.Module):
         d5 = self.up5(d4, None)
 
         out = self.final_conv(d5)
+        out = F.softplus(out)
 
         out = F.interpolate(out, size=(self.n_mels, self.target_t), mode="bilinear", align_corners=False)
 
