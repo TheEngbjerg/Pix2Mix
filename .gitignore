@@ -209,6 +209,7 @@ __marimo__/
 # Debug dataset
 dataset_10/
 dataset_jamendo/
+dataset_test/
 
 # Output
 out/
