@@ -3,20 +3,15 @@ import os
 # Train directory helpers
 
 TRAIN_DIRECTORY: str = "out/"
-def _create_train_structure(path: str = TRAIN_DIRECTORY) -> str:
+def train_setup(path: str = TRAIN_DIRECTORY) -> tuple[str, str]:
     model_dir = os.path.join(path, "model_weights/")
     os.makedirs(model_dir, exist_ok=True)
-    return model_dir
-
-def get_modelfile(name: str, path: str = TRAIN_DIRECTORY) -> str:
-    model_dir = _create_train_structure(path=path)
-    modelfile = os.path.join(model_dir, f"{name}.pt")
-    return modelfile
-
-def get_logfile(path: str = TRAIN_DIRECTORY) -> str:
-    _create_train_structure(path=path)
     logfile = os.path.join(path, "train.log")
-    return logfile
+    return model_dir, logfile
+
+def get_modelfile(name: str, location: str) -> str:
+    modelfile = os.path.join(location, f"{name}.pt")
+    return modelfile
 
 # Test directory helper
 

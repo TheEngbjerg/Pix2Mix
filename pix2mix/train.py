@@ -1,11 +1,12 @@
 import torch
-import os
 from model.pix_encoder import PixMixEncoder
 from model.loss_fn import spectrogram_loss
 from data.data_utilities import get_dataloader, DataLoader, MAX_FRAMES
 from tqdm import tqdm
 import logging
 from argparse import ArgumentParser
+
+from utils.directory_helpers import train_setup, get_modelfile
 
 def create_parser():
     parser = ArgumentParser()
@@ -15,20 +16,11 @@ def create_parser():
 
     return args.input_directory, args.epochs
 
-# log
-# logger_location = os.path.join(logs_dir, "training_log")
-# logging.basicConfig(filename=logger_location, level=logging.INFO)
-# logger = logging.getLogger(__name__)
-
 # Training setup
-
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 model = PixMixEncoder(target_t=MAX_FRAMES).to(device)
 
-
 learning_rate = 1e-4
-
-
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 def train(model: PixMixEncoder, dataloader: DataLoader, optimizer = optimizer, device: torch.device = device):
@@ -69,7 +61,13 @@ def evaluate(model: PixMixEncoder, dataloader: DataLoader, device: torch.device 
 
 if __name__ == "__main__":
     input_directory, epochs = create_parser()
-    train_set, validation_set, test_set = get_dataloader(dataset_dir=input_directory)
+    model_dir, logfile_location = train_setup()
+
+    # log
+    logging.basicConfig(filename=logfile_location, level=logging.INFO)
+    logger = logging.getLogger(__name__)
+
+    train_set, validation_set = get_dataloader(dataset_dir=input_directory)
     best_loss = None
     for epoch in tqdm(range(epochs)):
         save_model = False
@@ -84,8 +82,8 @@ if __name__ == "__main__":
         logger.info(f"Epoch: {epoch}\nTrain loss: {train_loss}\nEvaluation loss: {eval_loss}\nSave model: {save_model}")
 
         if save_model:
-            model_file = os.path.join(
-                model_dir,
-                f"model_e{epoch}.pt"
-            )
+            model_file = get_modelfile(f"model_e{epoch}", model_dir)
             torch.save(model.state_dict(), model_file)
+    
+    model_file = get_modelfile("latest", model_dir)
+    torch.save(model.state_dict(), model_file)
