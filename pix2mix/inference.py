@@ -13,7 +13,7 @@ from utils.plot_helpers import create_pref_target_spectrogram
 def get_parser():
     parser = ArgumentParser()
     parser.add_argument("-i", "--input-data", type=str, required=True, help="Input data")
-    parser.add_argument("-m", "--model-weights", type=str, required=True, help="Path to model weights")
+    parser.add_argument("-m", "--model-weights", type=str, required=False, default="out/model_weights/latest.pt", help="Path to model weights")
     args = parser.parse_args()
 
     return args.input_data, args.model_weights
