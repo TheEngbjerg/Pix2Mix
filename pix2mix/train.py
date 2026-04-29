@@ -13,9 +13,10 @@ def create_parser():
     parser.add_argument("-i", "--input-directory", type=str, required=True, help="Path to input")
     parser.add_argument("-e", "--epochs", type=int, required=False, default=100, help="Epoch amount")
     parser.add_argument("-l", "--learning-rate", type=float, required=False, default=1e-3, help="Learning rate")
+    parser.add_argument("-b", "--batch_size", type=int, required=False, default=8, help="Batch size")
     args = parser.parse_args()
 
-    return args.input_directory, args.epochs, args.learning_rate
+    return args.input_directory, args.epochs, args.learning_rate, args.batch_size
 
 # Training setup
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -57,7 +58,7 @@ def evaluate(model: PixMixEncoder, dataloader: DataLoader, device: torch.device 
 
 
 if __name__ == "__main__":
-    input_directory, epochs, learning_rate = create_parser()
+    input_directory, epochs, learning_rate, batch_size = create_parser()
     model_dir, logfile_location = train_setup()
     
     # log
@@ -67,7 +68,7 @@ if __name__ == "__main__":
     # Training
     model = PixMixEncoder(target_t=MAX_FRAMES).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    train_set, validation_set = get_dataloader(dataset_dir=input_directory)
+    train_set, validation_set = get_dataloader(dataset_dir=input_directory, batch_size=batch_size)
     best_loss = None
     for epoch in tqdm(range(epochs)):
         save_model = False
