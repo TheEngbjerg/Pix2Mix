@@ -23,15 +23,28 @@ class ConvolutionBlock(nn.Module):
 class UpBlock(nn.Module):
     def __init__(self, in_ch, out_ch, skip_ch, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.conv1 = ConvolutionBlock(in_ch + skip_ch, out_ch)
+        self.up = nn.ConvTranspose2d(
+            in_channels=in_ch,
+            out_channels=out_ch,
+            kernel_size=4,
+            stride=2,
+            padding=1
+        )
+        self.conv1 = ConvolutionBlock(out_ch + skip_ch, out_ch)
         self.conv2 = ConvolutionBlock(out_ch, out_ch)
     
     def forward(self, x, skip = None):
+        x = self.up(x)
         if skip is not None:
-            x = F.interpolate(x, size=skip.shape[-2:], mode="bilinear", align_corners=False)
+            if x.shape[-2:] != skip.shape[-2:]:
+                x = F.interpolate(
+                    x,
+                    size=skip.shape[-2:],
+                    mode="bilinear",
+                    align_corners=False
+                )
+
             x = torch.cat([x, skip], dim=1)
-        else:
-            x = F.interpolate(x, scale_factor=2, mode="bilinear", align_corners=False)
         x = self.conv1(x)
         x = self.conv2(x)
         return x
@@ -73,7 +86,7 @@ class PixMixEncoder(nn.Module):
         self.encoder = ResNetEncoder()
 
         self.up1 = UpBlock(512, 256, 256)
-        self.up2 = UpBlock(256, 128, 128)
+        self.up2 = UpBlock(256, 128, 0)
         self.up3 = UpBlock(128, 64, 0)
         self.up4 = UpBlock(64, 32, 0)
         self.up5 = UpBlock(32, 16, 0)
@@ -87,7 +100,7 @@ class PixMixEncoder(nn.Module):
         x1, x3, x4, x5, x6 = self.encoder(x)
 
         d1 = self.up1(x6, x5)
-        d2 = self.up2(d1, x4)
+        d2 = self.up2(d1, None)
         d3 = self.up3(d2, None)
         d4 = self.up4(d3, None)
         d5 = self.up5(d4, None)

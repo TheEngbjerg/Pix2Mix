@@ -14,9 +14,10 @@ def get_parser():
     parser = ArgumentParser()
     parser.add_argument("-i", "--input-data", type=str, required=True, help="Input data")
     parser.add_argument("-m", "--model-weights", type=str, required=False, default="out/model_weights/latest.pt", help="Path to model weights")
+    parser.add_argument("-b", "--batch_size", type=int, required=False, default=8, help="Batch size")
     args = parser.parse_args()
 
-    return args.input_data, args.model_weights
+    return args.input_data, args.model_weights, args.batch_size
 
 def test(experiment_name: str, model: PixMixEncoder, dataloader: DataLoader, device: torch.device):
     test_dir, log_path = create_test(experiment_name)
@@ -67,7 +68,7 @@ def test(experiment_name: str, model: PixMixEncoder, dataloader: DataLoader, dev
 
 
 if __name__ == "__main__":
-    input_path, model_weights = get_parser()
+    input_path, model_weights, batch_size = get_parser()
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model = PixMixEncoder(target_t=MAX_FRAMES).to(device)
@@ -75,7 +76,7 @@ if __name__ == "__main__":
     state_dict = torch.load(model_weights)
     model.load_state_dict(state_dict)
 
-    dataloader = get_dataloader(dataset_dir=input_path, test=True)
+    dataloader = get_dataloader(dataset_dir=input_path, test=True, batch_size=batch_size)
 
     test_loss = test(
         experiment_name=model_weights,

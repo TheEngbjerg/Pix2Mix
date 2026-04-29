@@ -3,7 +3,7 @@ import torch
 
 l1_loss_fn = nn.L1Loss()
 # Loss parameters
-lamda_log = 1.0
+lamda_log = 0.1
 eps = 1e-5
 def spectrogram_loss(prediction: torch.Tensor, target: torch.Tensor):
     prediction = torch.clamp(prediction, min=eps)
